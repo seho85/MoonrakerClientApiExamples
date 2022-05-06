@@ -32,3 +32,17 @@ This example uses the more complex _websocketapp_ from the websocket-client libr
 2) Request Data
 3) Stay connected
 4) Status Updates published from Moonraker are also shown in this example
+
+
+read_websocket_app_subscribe.py
+-------------------------------
+Show how to subscribe to printer objects. The subscribed objects were periodically send
+on the websocket from moonraker to the script.
+
+Warning: Only values that have changed are transmitted.
+
+
+read_websocket_app_query_and_subscribe.py
+-----------------------------------------
+Query some printer objects and subsscribe afterwards and update global variables with 
+data which was delivered periodically.
