@@ -25,6 +25,7 @@ License:
 
 import websocket
 import json
+from jsonmerge import merge
 
 
 printer_ip = "10.0.1.69"
@@ -36,6 +37,9 @@ extruder_temperature = 0
 extruder_target_temperature = 0
 bed_temperature = 0
 bed_target_temperature = 0
+
+
+json_data_modell = {}
 
 def on_close(ws, close_status, close_msg):
   pass
@@ -50,8 +54,8 @@ def query_data(ws):
     "method": "printer.objects.query",
     "params": {
         "objects": {
-            "extruder": [ "temperature", "target"],
-            "heater_bed": ["temperature", "target"]
+            "extruder": None,
+            "heater_bed": None
         }
     },
     "id": 1234
@@ -85,34 +89,16 @@ def add_subscription(ws):
   }
   ws.send(json.dumps(data))
 
-def print_data():
-  print("Extruder Temperature:        %s °C" % ( str(extruder_temperature)) )
-  print("Extruder Target Temperature: %s °C" % ( str(extruder_target_temperature)) )
-  print("Bed Temperature:             %s °C" % ( str(bed_temperature)) )
-  print("Bed Target Temperature:      %s °C" % ( str(bed_target_temperature)) )
-
-
 def on_message(ws, msg):
   response = json.loads(msg)
+  global json_data_modell
 
   if 'id' in response:
     # Response to our query data request 
     if response["id"] == 1234:
-      print("Data Query Data:")
-
-      global extruder_temperature
-      global extruder_target_temperature
-      global bed_temperature
-      global bed_target_temperature
-
-      extruder_temperature = response["result"]["status"]["extruder"]["temperature"]
-      extruder_target_temperature = response["result"]["status"]["extruder"]["target"]
-
-      bed_temperature = response["result"]["status"]["heater_bed"]["temperature"]
-      bed_target_temperature = response["result"]["status"]["heater_bed"]["target"]
-     
-      print_data()
-
+      #print(json.dumps(response, indent=2))
+   
+      json_data_modell = response["result"]["status"]
       
       add_subscription(ws)
        
@@ -121,20 +107,12 @@ def on_message(ws, msg):
   # The subscribed objects are only published when the value has changed.
   # e.g. bed_temperature target set to 50°, extruder temperature has changed, bed_temperature has changed, a.s.o.
   if response['method'] == "notify_status_update":
+    json_pub_data = response["params"][0]
+    #print(json.dumps(json_pub_data, indent=2))
+    json_merged = merge(json_data_modell, json_pub_data)
+    #print(json.dumps(json_merged, indent=2))
 
-    if "heater_bed" in response['params'][0]:
-      if 'temperature' in response["params"][0]["heater_bed"]:
-              bed_temperature = response["params"][0]["heater_bed"]["temperature"]
-      if 'target' in response["params"][0]["heater_bed"]:
-              bed_target_temperature = response["params"][0]["heater_bed"]["target"]
-    
-    if "extruder" in response['params'][0]:
-      if 'temperature' in response["params"][0]["extruder"]:
-              extruder_temperature = response["params"][0]["extruder"]["temperature"]
-      if 'target' in response["params"][0]["extruder"]:
-              extruder_target_temperature = response["params"][0]["extruder"]["target"]
 
-print_data()
 
 
 def on_open(ws):
